@@ -1,11 +1,13 @@
 package no.nav.helse
 
 import arrow.core.Try
+import com.github.kittinunf.fuel.core.FuelManager
 import io.ktor.application.Application
 import io.ktor.application.log
 import io.ktor.util.KtorExperimentalAPI
 import org.json.JSONArray
 import org.json.JSONObject
+import org.slf4j.MDC
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -20,12 +22,32 @@ fun Application.grafanaExporter() {
         list
     })
 
+    FuelManager.instance.addRequestInterceptor { next ->
+        { request ->
+            log.info("fetching ${request.url}")
+
+            request.allowRedirects(false)
+
+            next(request)
+        }
+    }
+    FuelManager.instance.addResponseInterceptor { next ->
+        { request, response ->
+            try {
+                MDC.put("url", "${response.url}")
+                log.info("response status=${response.statusCode}")
+            } finally {
+                MDC.remove("url")
+            }
+            next(request, response)
+        }
+    }
+
     timer(
             name = "export-loop",
             daemon = true,
             period = TimeUnit.SECONDS.toMillis(60)) {
 
-        log.info("fetching panels")
         dashboards.forEach { dashboard ->
             dashboard.fetchAll(
                     baseUrl = environment.config.property("grafanaBaseUrl").getString(),
@@ -34,11 +56,15 @@ fun Application.grafanaExporter() {
                     zoneId = ZoneId.of("Europe/Oslo")
             ).forEach { either ->
                 either.fold({ error ->
-                    log.info("Fetching ${error.response.url} failed with " +
-                            "status ${error.response.statusCode}: ${error.message}", error.exception)
+                    try {
+                        MDC.put("url", "${error.response.url}")
+                        log.info("failed with status ${error.response.statusCode}: ${error.message}", error.exception)
+                    } finally {
+                        MDC.remove("url")
+                    }
                     null
                 }, { (panel, imageData) ->
-                    log.info("fetched image of ${imageData.size} bytes")
+                    log.info("received ${imageData.size} bytes")
                 })
             }
         }
