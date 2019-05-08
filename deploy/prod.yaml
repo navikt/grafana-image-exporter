@@ -33,6 +33,7 @@ spec:
     enabled: true
     path: /metrics
   secrets: false
+  webproxy: true
   env:
     - name: GRAFANA_BASE_URL
       value: https://grafana.adeo.no
