@@ -64,6 +64,7 @@ fun Application.grafanaExporter(dashboards: List<GrafanaDashboard>) {
                 ).forEach { (panel, either) ->
                     try {
                         MDC.put("panelId", "${panel.id}")
+                        MDC.put("panelName", panel.name)
 
                         either.fold({ error ->
                             try {
@@ -80,6 +81,7 @@ fun Application.grafanaExporter(dashboards: List<GrafanaDashboard>) {
                             kafkaProducer.send(record)
                         }
                     } finally {
+                        MDC.remove("panelName")
                         MDC.remove("panelId")
                     }
                 }
