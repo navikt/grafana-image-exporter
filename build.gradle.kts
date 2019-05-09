@@ -7,9 +7,7 @@ val arrowVersion = "0.9.0"
 val orgJsonVersion = "20180813"
 val prometheusVersion = "0.6.0"
 val fuelVersion = "1.15.1"
-val s3SdkVersion = "2.5.29"
 val wireMockVersion = "2.19.0"
-val mockkVersion = "1.8.12.kotlin13"
 val junitJupiterVersion = "5.4.0"
 val mainClass = "no.nav.helse.AppKt"
 
@@ -34,15 +32,13 @@ dependencies {
     compile("io.prometheus:simpleclient_common:$prometheusVersion")
     compile("io.prometheus:simpleclient_hotspot:$prometheusVersion")
 
-    compile("software.amazon.awssdk:kinesis:$s3SdkVersion")
     compile("org.json:json:$orgJsonVersion")
 
     compile("com.github.kittinunf.fuel:fuel:$fuelVersion")
     compile("io.arrow-kt:arrow-core-data:$arrowVersion")
 
     testCompile ("no.nav:kafka-embedded-env:$kafkaVersion")
-    
-    testCompile("io.mockk:mockk:$mockkVersion")
+
     testCompile("com.github.tomakehurst:wiremock:$wireMockVersion") {
         exclude(group = "junit")
     }
