@@ -5,6 +5,14 @@
       {
         "id": 2,
         "name": "sykepengesoknader-behandlet-ok"
+      },
+      {
+        "id": 43,
+        "name": "sykepengesoknader-manuell-behandling"
+      },
+      {
+        "id": 46,
+        "name": "sykepengesoknader-mottatt"
       }
     ]
   }
