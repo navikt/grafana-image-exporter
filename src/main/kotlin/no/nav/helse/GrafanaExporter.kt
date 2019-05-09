@@ -54,26 +54,37 @@ fun Application.grafanaExporter(dashboards: List<GrafanaDashboard>) {
             period = TimeUnit.SECONDS.toMillis(60)) {
 
         dashboards.forEach { dashboard ->
-            dashboard.fetchAll(
-                    baseUrl = environment.config.property("grafanaBaseUrl").getString(),
-                    from = LocalDate.now().atTime(0, 0),
-                    to = LocalDateTime.now(),
-                    zoneId = ZoneId.of("Europe/Oslo")
-            ).forEach { either ->
-                either.fold({ error ->
+            try {
+                MDC.put("dashboardId", dashboard.id)
+                dashboard.fetchAll(
+                        baseUrl = environment.config.property("grafanaBaseUrl").getString(),
+                        from = LocalDate.now().atTime(0, 0),
+                        to = LocalDateTime.now(),
+                        zoneId = ZoneId.of("Europe/Oslo")
+                ).forEach { (panel, either) ->
                     try {
-                        MDC.put("url", "${error.response.url}")
-                        log.info("failed with status ${error.response.statusCode}: ${error.message}", error.exception)
+                        MDC.put("panelId", "${panel.id}")
+
+                        either.fold({ error ->
+                            try {
+                                MDC.put("url", "${error.response.url}")
+                                log.info("failed with status ${error.response.statusCode}: ${error.message}", error.exception)
+                            } finally {
+                                MDC.remove("url")
+                            }
+                            null
+                        }, { imageData ->
+                            log.info("received ${imageData.size} bytes")
+                            recordMapper(dashboard, panel, imageData)
+                        })?.let { record ->
+                            kafkaProducer.send(record)
+                        }
                     } finally {
-                        MDC.remove("url")
+                        MDC.remove("panelId")
                     }
-                    null
-                }, { (panel, imageData) ->
-                    log.info("received ${imageData.size} bytes")
-                    recordMapper(dashboard, panel, imageData)
-                })?.let { record ->
-                    kafkaProducer.send(record)
                 }
+            } finally {
+                MDC.remove("dashboardId")
             }
         }
     }

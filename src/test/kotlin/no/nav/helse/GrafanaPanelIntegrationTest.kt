@@ -74,10 +74,10 @@ class GrafanaPanelIntegrationTest {
 
         val actual = dashboard.fetchAll(server.baseUrl(), from.toLocalDateTime(), to.toLocalDateTime(), zoneId)
 
-        actual.forEach {
-            it.fold({ throwable ->
+        actual.forEach { (_, either) ->
+            either.fold({ throwable ->
                 throw throwable
-            }, { (_, imageData) ->
+            }, { imageData ->
                 assertEquals(body.size, imageData.size)
                 body.forEachIndexed { index, byte ->
                     assertEquals(byte, imageData[index])
@@ -116,8 +116,8 @@ class GrafanaPanelIntegrationTest {
 
         val actual = dashboard.fetchAll(server.baseUrl(), from.toLocalDateTime(), to.toLocalDateTime(), zoneId)
 
-        actual.forEach {
-            it.map {
+        actual.forEach { (_, either) ->
+            either.map {
                 fail { "expected request to fail" }
             }
         }
@@ -149,8 +149,8 @@ class GrafanaPanelIntegrationTest {
 
         val actual = dashboard.fetchAll(server.baseUrl(), from.toLocalDateTime(), to.toLocalDateTime(), zoneId)
 
-        actual.forEach {
-            it.map {
+        actual.forEach { (_, either) ->
+            either.map {
                 fail { "expected request to fail" }
             }
         }

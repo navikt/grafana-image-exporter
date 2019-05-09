@@ -19,10 +19,8 @@ data class GrafanaDashboard(val id: String, val panels: Set<GrafanaPanel>) {
 }
 
 fun GrafanaDashboard.fetchAll(baseUrl: String, from: LocalDateTime, to: LocalDateTime, zoneId: ZoneId) =
-        panels.map { panel ->
-            panel.fetch(baseUrl, id, from, to, zoneId).map {
-                panel to it
-            }
+        panels.asSequence().map { panel ->
+            panel to panel.fetch(baseUrl, id, from, to, zoneId)
         }
 
 data class GrafanaPanel(val id: Int, val name: String) {
