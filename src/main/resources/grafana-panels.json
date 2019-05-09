@@ -3,7 +3,8 @@
     "id": "CnVpvS6mk",
     "panels": [
       {
-        "id": 2
+        "id": 2,
+        "name": "sykepengesoknader-behandlet-ok"
       }
     ]
   }

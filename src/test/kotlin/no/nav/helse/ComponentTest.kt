@@ -65,8 +65,8 @@ class ComponentTest {
     @Test
     @KtorExperimentalAPI
     fun `should put image on topic`() {
-        val panel = GrafanaPanel(1)
-        val dashboard = GrafanaDashboard("asdf", listOf(panel))
+        val panel = GrafanaPanel(1, "panel")
+        val dashboard = GrafanaDashboard("asdf", setOf(panel))
 
         val expectedImage = testImage()
 
@@ -91,7 +91,7 @@ class ComponentTest {
                 }) {
             val actual = consumeOneMessage()
 
-            assertEquals("${dashboard.id}:${panel.id}", actual.key())
+            assertEquals("${dashboard.id}:${panel.name}", actual.key())
             assertEquals(expectedImage.size, actual.value().size)
 
             expectedImage.forEachIndexed { index, byte ->
@@ -101,7 +101,7 @@ class ComponentTest {
     }
 
     private fun grafanaStub(dashboard: GrafanaDashboard, panel: GrafanaPanel, image: ByteArray) {
-        WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/render/d-solo/${dashboard.id}/${panel.panelName}"))
+        WireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/render/d-solo/${dashboard.id}/${panel.name}"))
                 .withQueryParam("panelId", WireMock.equalTo("${panel.id}"))
                 .willReturn(WireMock.aResponse()
                         .withStatus(200)

@@ -70,10 +70,11 @@ fun readPanelsFromFile() =
                             panels = getJSONArray("panels").map { panel ->
                                 with (panel as JSONObject) {
                                     GrafanaPanel(
-                                            id = getInt("id")
+                                            id = getInt("id"),
+                                            name = getString("name")
                                     )
                                 }
-                            }
+                            }.toSet()
                     )
                 }
             }

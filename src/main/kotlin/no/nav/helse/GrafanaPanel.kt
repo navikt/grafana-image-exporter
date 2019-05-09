@@ -9,7 +9,7 @@ import java.io.IOException
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-data class GrafanaDashboard(val id: String, val panels: List<GrafanaPanel>) {
+data class GrafanaDashboard(val id: String, val panels: Set<GrafanaPanel>) {
     private val lettersAndNumbers = Regex("^[A-Za-z0-9]+$")
     init {
         if (!lettersAndNumbers.matches(id)) {
@@ -25,8 +25,29 @@ fun GrafanaDashboard.fetchAll(baseUrl: String, from: LocalDateTime, to: LocalDat
             }
         }
 
-data class GrafanaPanel(val id: Int) {
-    val panelName = "panel"
+data class GrafanaPanel(val id: Int, val name: String) {
+    private val lettersNumbersUnderscoreAndHyphen = Regex("^[A-Za-z0-9_-]+$")
+
+    init {
+        if (!lettersNumbersUnderscoreAndHyphen.matches(name)) {
+            throw IllegalArgumentException("invalid panel name: $name")
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as GrafanaPanel
+
+        if (name != other.name) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return name.hashCode()
+    }
 }
 
 private fun Response.contentType() =
@@ -42,8 +63,8 @@ private fun Response.isPNG() =
         } ?: false
 
 private fun GrafanaPanel.fetch(baseUrl: String, dashboardId: String, from: LocalDateTime, to: LocalDateTime, zoneId: ZoneId) =
-        Fuel.get("$baseUrl/render/d-solo/${dashboardId}/${panelName}" +
-                "?panelId=${id}" +
+        Fuel.get("$baseUrl/render/d-solo/$dashboardId/$name" +
+                "?panelId=$id" +
                 "&from=${from.atZone(zoneId).toInstant().toEpochMilli()}" +
                 "&to=${to.atZone(zoneId).toInstant().toEpochMilli()}" +
                 "&tz=${zoneId.id}").let { request ->

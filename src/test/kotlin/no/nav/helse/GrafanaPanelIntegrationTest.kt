@@ -45,13 +45,13 @@ class GrafanaPanelIntegrationTest {
 
     @Test
     fun `should fetch image data from grafana`() {
+        val panel = GrafanaPanel(
+                id = 1,
+                name = "panel"
+        )
         val dashboard = GrafanaDashboard(
                 id = "asdf",
-                panels = listOf(
-                        GrafanaPanel(
-                                id = 1
-                        )
-                )
+                panels = setOf(panel)
         )
 
         val zoneId = ZoneId.of("UTC")
@@ -61,8 +61,8 @@ class GrafanaPanelIntegrationTest {
         val body = ByteArray(512)
         Random().nextBytes(body)
 
-        val mapping = get(urlPathEqualTo("/render/d-solo/${dashboard.id}/${dashboard.panels[0].panelName}"))
-                .withQueryParam("panelId", equalTo("${dashboard.panels[0].id}"))
+        val mapping = get(urlPathEqualTo("/render/d-solo/${dashboard.id}/${panel.name}"))
+                .withQueryParam("panelId", equalTo("${panel.id}"))
                 .withQueryParam("from", equalTo("${from.toInstant().toEpochMilli()}"))
                 .withQueryParam("to", equalTo("${to.toInstant().toEpochMilli()}"))
                 .withQueryParam("tz", equalTo("UTC"))
@@ -88,13 +88,13 @@ class GrafanaPanelIntegrationTest {
 
     @Test
     fun `should not fetch image data when content type is not png`() {
+        val panel = GrafanaPanel(
+                id = 1,
+                name = "panel"
+        )
         val dashboard = GrafanaDashboard(
                 id = "asdf",
-                panels = listOf(
-                        GrafanaPanel(
-                                id = 1
-                        )
-                )
+                panels = setOf(panel)
         )
 
         val zoneId = ZoneId.of("UTC")
@@ -104,8 +104,8 @@ class GrafanaPanelIntegrationTest {
         val body = ByteArray(512)
         Random().nextBytes(body)
 
-        val mapping = get(urlPathEqualTo("/render/d-solo/${dashboard.id}/${dashboard.panels[0].panelName}"))
-                .withQueryParam("panelId", equalTo("${dashboard.panels[0].id}"))
+        val mapping = get(urlPathEqualTo("/render/d-solo/${dashboard.id}/${panel.name}"))
+                .withQueryParam("panelId", equalTo("${panel.id}"))
                 .withQueryParam("from", equalTo("${from.toInstant().toEpochMilli()}"))
                 .withQueryParam("to", equalTo("${to.toInstant().toEpochMilli()}"))
                 .withQueryParam("tz", equalTo("UTC"))
@@ -125,21 +125,21 @@ class GrafanaPanelIntegrationTest {
 
     @Test
     fun `should not follow redirects`() {
+        val panel = GrafanaPanel(
+                id = 1,
+                name = "panel"
+        )
         val dashboard = GrafanaDashboard(
                 id = "asdf",
-                panels = listOf(
-                        GrafanaPanel(
-                                id = 1
-                        )
-                )
+                panels = setOf(panel)
         )
 
         val zoneId = ZoneId.of("UTC")
         val from = LocalDate.now().atTime(0, 0).atZone(zoneId)
         val to = LocalDateTime.now().atZone(zoneId)
 
-        val mapping = get(urlPathEqualTo("/render/d-solo/${dashboard.id}/${dashboard.panels[0].panelName}"))
-                .withQueryParam("panelId", equalTo("${dashboard.panels[0].id}"))
+        val mapping = get(urlPathEqualTo("/render/d-solo/${dashboard.id}/${panel.name}"))
+                .withQueryParam("panelId", equalTo("${panel.id}"))
                 .withQueryParam("from", equalTo("${from.toInstant().toEpochMilli()}"))
                 .withQueryParam("to", equalTo("${to.toInstant().toEpochMilli()}"))
                 .withQueryParam("tz", equalTo("UTC"))
