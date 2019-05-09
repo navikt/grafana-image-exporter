@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val slf4jVersion = "1.7.25"
 val ktorVersion = "1.1.2"
+val kafkaVersion = "2.0.1"
 val arrowVersion = "0.9.0"
 val orgJsonVersion = "20180813"
 val prometheusVersion = "0.6.0"
@@ -28,6 +29,8 @@ dependencies {
     compile("net.logstash.logback:logstash-logback-encoder:5.2")
     compile("io.ktor:ktor-server-netty:$ktorVersion")
 
+    compile("org.apache.kafka:kafka-clients:$kafkaVersion")
+
     compile("io.prometheus:simpleclient_common:$prometheusVersion")
     compile("io.prometheus:simpleclient_hotspot:$prometheusVersion")
 
@@ -37,6 +40,8 @@ dependencies {
     compile("com.github.kittinunf.fuel:fuel:$fuelVersion")
     compile("io.arrow-kt:arrow-core-data:$arrowVersion")
 
+    testCompile ("no.nav:kafka-embedded-env:$kafkaVersion")
+    
     testCompile("io.mockk:mockk:$mockkVersion")
     testCompile("com.github.tomakehurst:wiremock:$wireMockVersion") {
         exclude(group = "junit")
@@ -56,6 +61,7 @@ repositories {
     jcenter()
     mavenCentral()
     maven("https://dl.bintray.com/kotlin/ktor")
+    maven("http://packages.confluent.io/maven/")
 }
 
 java {
