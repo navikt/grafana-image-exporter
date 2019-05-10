@@ -91,7 +91,7 @@ class ComponentTest {
                 }) {
             val actual = consumeOneMessage()
 
-            assertEquals("${dashboard.id}:${panel.name}", actual.key())
+            assertEquals("${dashboard.id}_${panel.name}.png", actual.key())
             assertEquals(expectedImage.size, actual.value().size)
 
             expectedImage.forEachIndexed { index, byte ->

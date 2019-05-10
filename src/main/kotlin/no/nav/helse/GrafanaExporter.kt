@@ -93,7 +93,7 @@ fun Application.grafanaExporter(dashboards: List<GrafanaDashboard>) {
 }
 
 fun recordMapper(dashboard: GrafanaDashboard, panel: GrafanaPanel, imageData: ByteArray) =
-        ProducerRecord(exportedPanelsTopic, "${dashboard.id}:${panel.name}", imageData)
+        ProducerRecord(exportedPanelsTopic, "${dashboard.id}_${panel.name}.png", imageData)
 
 @KtorExperimentalAPI
 private fun Application.kafkaConfig() = Properties().apply {
