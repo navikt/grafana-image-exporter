@@ -13,6 +13,10 @@
       {
         "id": 46,
         "name": "sykepengesoknader-mottatt"
+      },
+      {
+        "id": 64,
+        "name": "automatiseringsgrad"
       }
     ]
   }
