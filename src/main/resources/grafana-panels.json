@@ -16,7 +16,8 @@
       },
       {
         "id": 64,
-        "name": "automatiseringsgrad"
+        "name": "automatiseringsgrad",
+        "relative_time": "p7d"
       }
     ]
   }

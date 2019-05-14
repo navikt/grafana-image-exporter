@@ -11,6 +11,9 @@ import io.ktor.server.netty.Netty
 import io.ktor.util.KtorExperimentalAPI
 import org.json.JSONArray
 import org.json.JSONObject
+import java.time.Duration
+import java.time.Period
+import java.time.temporal.TemporalAmount
 import java.util.concurrent.TimeUnit
 
 @KtorExperimentalAPI
@@ -71,7 +74,8 @@ fun readPanelsFromFile() =
                                 with (panel as JSONObject) {
                                     GrafanaPanel(
                                             id = getInt("id"),
-                                            name = getString("name")
+                                            name = getString("name"),
+                                            relativeTime = optString("relative_time", null)?.let(::parseDuration)
                                     )
                                 }
                             }.toSet()
@@ -79,3 +83,11 @@ fun readPanelsFromFile() =
                 }
             }
         }
+
+private fun parseDuration(period: String): TemporalAmount {
+    return if (period.startsWith("pt", true)) {
+        Duration.parse(period)
+    } else {
+        Period.parse(period)
+    }
+}

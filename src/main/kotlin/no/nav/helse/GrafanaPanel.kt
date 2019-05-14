@@ -8,6 +8,7 @@ import com.github.kittinunf.fuel.core.Response
 import java.io.IOException
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.temporal.TemporalAmount
 
 data class GrafanaDashboard(val id: String, val panels: Set<GrafanaPanel>) {
     private val lettersAndNumbers = Regex("^[A-Za-z0-9]+$")
@@ -23,7 +24,7 @@ fun GrafanaDashboard.fetchAll(baseUrl: String, from: LocalDateTime, to: LocalDat
             panel to panel.fetch(baseUrl, id, from, to, zoneId)
         }
 
-data class GrafanaPanel(val id: Int, val name: String) {
+data class GrafanaPanel(val id: Int, val name: String, val relativeTime: TemporalAmount? = null) {
     private val lettersNumbersUnderscoreAndHyphen = Regex("^[A-Za-z0-9_-]+$")
 
     init {
@@ -63,7 +64,7 @@ private fun Response.isPNG() =
 private fun GrafanaPanel.fetch(baseUrl: String, dashboardId: String, from: LocalDateTime, to: LocalDateTime, zoneId: ZoneId) =
         Fuel.get("$baseUrl/render/d-solo/$dashboardId/$name" +
                 "?panelId=$id" +
-                "&from=${from.atZone(zoneId).toInstant().toEpochMilli()}" +
+                "&from=${(relativeTime?.let { from.minus(relativeTime) } ?: from).atZone(zoneId).toInstant().toEpochMilli()}" +
                 "&to=${to.atZone(zoneId).toInstant().toEpochMilli()}" +
                 "&tz=${zoneId.id}").let { request ->
             val (_, response, result) = request.response()

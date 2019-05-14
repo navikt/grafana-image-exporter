@@ -6,9 +6,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneId
+import java.time.*
 import java.util.*
 
 class GrafanaPanelIntegrationTest {
@@ -34,6 +32,7 @@ class GrafanaPanelIntegrationTest {
     fun configure() {
         val client = create().port(server.port()).build()
         configureFor(client)
+        client.resetMappings()
     }
 
     @AfterEach
@@ -45,41 +44,58 @@ class GrafanaPanelIntegrationTest {
 
     @Test
     fun `should fetch image data from grafana`() {
-        val panel = GrafanaPanel(
+        val panel1 = GrafanaPanel(
                 id = 1,
-                name = "panel"
+                name = "panel1"
+        )
+        val panel2 = GrafanaPanel(
+                id = 2,
+                name = "panel2",
+                relativeTime = Duration.parse("P1D")
         )
         val dashboard = GrafanaDashboard(
                 id = "asdf",
-                panels = setOf(panel)
+                panels = setOf(panel1, panel2)
         )
 
         val zoneId = ZoneId.of("UTC")
         val from = LocalDate.now().atTime(0, 0).atZone(zoneId)
         val to = LocalDateTime.now().atZone(zoneId)
 
-        val body = ByteArray(512)
-        Random().nextBytes(body)
+        val body1 = ByteArray(512)
+        Random().nextBytes(body1)
+        val body2 = ByteArray(512)
+        Random().nextBytes(body2)
 
-        val mapping = get(urlPathEqualTo("/render/d-solo/${dashboard.id}/${panel.name}"))
-                .withQueryParam("panelId", equalTo("${panel.id}"))
-                .withQueryParam("from", equalTo("${from.toInstant().toEpochMilli()}"))
-                .withQueryParam("to", equalTo("${to.toInstant().toEpochMilli()}"))
-                .withQueryParam("tz", equalTo("UTC"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "image/png")
-                        .withBody(body))
-        stubFor(mapping)
+        grafanaStub(dashboard, panel1, from, to, body1)
+        grafanaStub(dashboard, panel2, from, to, body2)
 
         val actual = dashboard.fetchAll(server.baseUrl(), from.toLocalDateTime(), to.toLocalDateTime(), zoneId)
+                .toList()
 
-        actual.forEach { (_, either) ->
+        assertEquals(2, actual.size)
+
+        actual.first { (panel, _) ->
+            panel == panel1
+        }.let { (_, either) ->
             either.fold({ throwable ->
                 throw throwable
             }, { imageData ->
-                assertEquals(body.size, imageData.size)
-                body.forEachIndexed { index, byte ->
+                assertEquals(body1.size, imageData.size)
+                body1.forEachIndexed { index, byte ->
+                    assertEquals(byte, imageData[index])
+                }
+            })
+        }
+
+        actual.first { (panel, _) ->
+            panel == panel2
+        }.let { (_, either) ->
+            either.fold({ throwable ->
+                throw throwable
+            }, { imageData ->
+                assertEquals(body2.size, imageData.size)
+                body2.forEachIndexed { index, byte ->
                     assertEquals(byte, imageData[index])
                 }
             })
@@ -104,15 +120,7 @@ class GrafanaPanelIntegrationTest {
         val body = ByteArray(512)
         Random().nextBytes(body)
 
-        val mapping = get(urlPathEqualTo("/render/d-solo/${dashboard.id}/${panel.name}"))
-                .withQueryParam("panelId", equalTo("${panel.id}"))
-                .withQueryParam("from", equalTo("${from.toInstant().toEpochMilli()}"))
-                .withQueryParam("to", equalTo("${to.toInstant().toEpochMilli()}"))
-                .withQueryParam("tz", equalTo("UTC"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withBody(body))
-        stubFor(mapping)
+        grafanaStub(dashboard, panel, from, to, 200, null, body)
 
         val actual = dashboard.fetchAll(server.baseUrl(), from.toLocalDateTime(), to.toLocalDateTime(), zoneId)
 
@@ -138,14 +146,7 @@ class GrafanaPanelIntegrationTest {
         val from = LocalDate.now().atTime(0, 0).atZone(zoneId)
         val to = LocalDateTime.now().atZone(zoneId)
 
-        val mapping = get(urlPathEqualTo("/render/d-solo/${dashboard.id}/${panel.name}"))
-                .withQueryParam("panelId", equalTo("${panel.id}"))
-                .withQueryParam("from", equalTo("${from.toInstant().toEpochMilli()}"))
-                .withQueryParam("to", equalTo("${to.toInstant().toEpochMilli()}"))
-                .withQueryParam("tz", equalTo("UTC"))
-                .willReturn(aResponse()
-                        .withStatus(302))
-        stubFor(mapping)
+        grafanaStub(dashboard, panel, from, to, 302, null, ByteArray(0))
 
         val actual = dashboard.fetchAll(server.baseUrl(), from.toLocalDateTime(), to.toLocalDateTime(), zoneId)
 
@@ -155,4 +156,21 @@ class GrafanaPanelIntegrationTest {
             }
         }
     }
+
+    private fun grafanaStub(dashboard: GrafanaDashboard, panel: GrafanaPanel, from: ZonedDateTime, to: ZonedDateTime, body: ByteArray) =
+            grafanaStub(dashboard, panel, from, to, 200, "image/png", body)
+
+    private fun grafanaStub(dashboard: GrafanaDashboard, panel: GrafanaPanel, from: ZonedDateTime, to: ZonedDateTime, statusCode: Int, contentType: String?, body: ByteArray) =
+            stubFor(get(urlPathEqualTo("/render/d-solo/${dashboard.id}/${panel.name}"))
+                    .withQueryParam("panelId", equalTo("${panel.id}"))
+                    .withQueryParam("from", equalTo("${(panel.relativeTime?.let { from.minus(panel.relativeTime) } ?: from).toInstant().toEpochMilli()}"))
+                    .withQueryParam("to", equalTo("${to.toInstant().toEpochMilli()}"))
+                    .withQueryParam("tz", equalTo("UTC"))
+                    .willReturn(aResponse()
+                            .withStatus(statusCode).also { responseBuilder ->
+                                if (contentType != null) {
+                                    responseBuilder.withHeader("Content-Type", contentType)
+                                }
+                            }
+                            .withBody(body)))
 }
