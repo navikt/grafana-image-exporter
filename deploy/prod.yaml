@@ -32,7 +32,8 @@ spec:
   prometheus:
     enabled: true
     path: /metrics
-  secrets: true
+  vault:
+    enabled: true
   env:
     - name: GRAFANA_BASE_URL
       value: https://grafana.adeo.no
